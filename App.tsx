@@ -21,14 +21,9 @@ function App() {
                 Papa.parse(csvData, {
                     header: true,
                     skipEmptyLines: true,
-                    // KRİTİK DÜZELTME: Başlıklardaki gizli boşlukları ve karakter sorunlarını temizler
                     transformHeader: (header) => header.trim(),
                     complete: (results: any) => {
                         setDrugs(results.data);
-                        setIsLoading(false);
-                    },
-                    error: (error: any) => {
-                        console.error("CSV okuma hatası:", error);
                         setIsLoading(false);
                     }
                 });
@@ -39,9 +34,10 @@ function App() {
         const term = searchTerm.toLowerCase().trim();
         if (!term) return;
 
-        const found = drugs.find(d => 
-            d["İlaç Adı"]?.toLowerCase().includes(term)
-        );
+        const found = drugs.find(d => {
+            const name = d["İlaç Adı"] || Object.values(d)[0];
+            return name?.toString().toLowerCase().includes(term);
+        });
         setResult(found || null);
         if (!found) alert("İlaç veritabanında bulunamadı.");
     };
@@ -54,11 +50,10 @@ function App() {
                 const text = await scanImage(image);
                 if (text) {
                     const cleanOCR = text.toLowerCase().replace(/[^a-z0-9şğüçöı ]/g, " ").trim();
-                    
                     const found = drugs.find(d => {
-                        if (!d["İlaç Adı"]) return false;
-                        const drugName = d["İlaç Adı"].toLowerCase().trim();
-                        return cleanOCR.includes(drugName) || drugName.includes(cleanOCR);
+                        const name = (d["İlaç Adı"] || Object.values(d)[0])?.toString().toLowerCase().trim();
+                        if (!name) return false;
+                        return cleanOCR.includes(name) || name.includes(cleanOCR);
                     });
                     
                     if (found) {
@@ -95,12 +90,12 @@ function App() {
                             placeholder="İlaç adı yazın..." 
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
-                            style={{ flex: 1, padding: '12px', borderRadius: '20px', border: 'none' }}
+                            style={{ flex: 1, padding: '12px', borderRadius: '20px', border: 'none', color: '#333' }}
                         />
-                        <button onClick={() => handleSearch(query)} style={{ padding: '10px 20px', borderRadius: '20px', backgroundColor: '#3498db', color: 'white', border: 'none' }}>Ara</button>
+                        <button onClick={() => handleSearch(query)} style={{ padding: '10px 25px', borderRadius: '20px', backgroundColor: '#3498db', color: 'white', border: 'none', fontWeight: 'bold' }}>Ara</button>
                     </div>
 
-                    <div onClick={() => { setShowCamera(true); startCamera(); }} style={{ backgroundColor: '#2ecc71', color: 'white', padding: '25px', borderRadius: '50%', width: '70px', height: '70px', margin: '20px auto', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div onClick={() => { setShowCamera(true); startCamera(); }} style={{ backgroundColor: '#2ecc71', color: 'white', padding: '25px', borderRadius: '50%', width: '70px', height: '70px', margin: '20px auto', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.3)' }}>
                         <span style={{ fontSize: '30px' }}>📸</span>
                     </div>
                     <p>İlaç Kutusunu Tara</p>
@@ -109,7 +104,7 @@ function App() {
                 <div>
                     <video ref={videoRef} autoPlay playsInline style={{ width: '100%', borderRadius: '15px', border: '3px solid #2ecc71' }} />
                     <div style={{ marginTop: '15px', display: 'flex', justifyContent: 'center', gap: '10px' }}>
-                        <button onClick={handleCapture} disabled={isProcessing} style={{ padding: '12px 25px', borderRadius: '25px', backgroundColor: '#e67e22', color: 'white', border: 'none' }}>
+                        <button onClick={handleCapture} disabled={isProcessing} style={{ padding: '12px 25px', borderRadius: '25px', backgroundColor: '#e67e22', color: 'white', border: 'none', fontWeight: 'bold' }}>
                             {isProcessing ? 'Okunuyor...' : 'Fotoğraf Çek'}
                         </button>
                         <button onClick={() => { stopCamera(); setShowCamera(false); }} style={{ padding: '12px 25px', borderRadius: '25px', backgroundColor: '#95a5a6', color: 'white', border: 'none' }}>Kapat</button>
@@ -118,14 +113,19 @@ function App() {
             )}
 
             {result && (
-                <div style={{ marginTop: '20px', padding: '20px', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: '15px', textAlign: 'left', border: '1px solid #3498db' }}>
-                    <h2 style={{ color: '#f1c40f', margin: '0 0 10px 0' }}>{result["İlaç Adı"]}</h2>
-                    <p><strong>🧪 Etken Madde:</strong> {result["Etken Madde"] || "Bilgi Yok"}</p>
-                    <p><strong>🎯 Kullanım Amacı:</strong> {result["Kullanım Amacı"] || "Bilgi Yok"}</p>
-                    {/* YAN ETKİLER DÜZELTMESİ: Eğer veri gelmezse uyarı verir */}
-                    <p><strong>⚠️ Yan Etkiler:</strong> {result["Yan Etkiler"] || "Veri okunamadı. CSV başlığını kontrol edin."}</p>
-                    <p><strong>👥 Yaş Aralığı:</strong> {result["Yaş Aralığı"] || "Bilgi Yok"}</p>
-                    <button onClick={() => setResult(null)} style={{ marginTop: '10px', background: 'none', border: '1px solid white', color: 'white', padding: '5px 15px', borderRadius: '15px', cursor: 'pointer' }}>Başka Bir İlaç Ara</button>
+                <div style={{ marginTop: '20px', padding: '20px', backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: '15px', textAlign: 'left', border: '1px solid #3498db', backdropFilter: 'blur(5px)' }}>
+                    <h2 style={{ color: '#f1c40f', margin: '0 0 15px 0', borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: '10px' }}>
+                        {result["İlaç Adı"] || Object.values(result)[0]}
+                    </h2>
+                    <p><strong>🧪 Etken Madde:</strong> {result["Etken Madde"] || Object.values(result)[1]}</p>
+                    <p><strong>🎯 Kullanım Amacı:</strong> {result["Kullanım Amacı"] || Object.values(result)[2]}</p>
+                    {/* Sütun sırasına göre garanti alım: index 3 -> Yan Etkiler */}
+                    <p><strong>⚠️ Yan Etkiler:</strong> {result["Yan Etkiler"] || Object.values(result)[3] || "Bilgi bulunamadı"}</p>
+                    <p><strong>👥 Yaş Aralığı:</strong> {result["Yaş Aralığı"] || Object.values(result)[4]}</p>
+                    
+                    <button onClick={() => setResult(null)} style={{ marginTop: '15px', background: 'rgba(255,255,255,0.2)', border: '1px solid white', color: 'white', padding: '8px 20px', borderRadius: '20px', cursor: 'pointer', width: '100%' }}>
+                        Başka Bir İlaç Ara
+                    </button>
                 </div>
             )}
         </div>
