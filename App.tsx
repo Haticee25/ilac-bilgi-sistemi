@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useCamera } from './useCamera';
-import { useOCR } from './useOCR';
+import { useOCR } from './userOCR';
 import Papa from 'papaparse';
 
 function App() {
